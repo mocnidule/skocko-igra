@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Marina – Bebiii, Ljubav, Sreća, Lepota</title>
+  <style>
+    :root{
+      /* Light, clean palette */
+      --bg:#f6f9fc;
+      --text:#0f172a;
+      --muted:#64748b;
+
+      --card:#ffffff;
+      --border:#e5e7eb;
+      --shadow:0 18px 36px rgba(2,6,23,.08);
+
+      --radius:18px;
+      --gap:12px;
+      --slot:60px;
+
+      /* Brand: your preferred #2185C5 */
+      --brand:#2185C5;
+      --brand-2:#1a6ea6;   /* hover */
+      --brand-3:#43a0d8;   /* glow/focus */
+
+      --peg-black:#111827;
+      --peg-white:#e5e7eb;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:
+        radial-gradient(900px 450px at 15% -10%, rgba(33,133,197,.08), transparent 40%),
+        radial-gradient(900px 450px at 110% 10%, rgba(33,133,197,.06), transparent 40%),
+        var(--bg);
+      color:var(--text);
+      font-family:ui-sans-serif,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Noto Sans";
+      line-height:1.45;
+      -webkit-font-smoothing:antialiased;
+      text-rendering:optimizeLegibility;
+    }
+
+    .wrap{max-width:1200px; margin:0 auto; padding:clamp(12px,2vw,24px)}
+    .board{display:grid; gap:clamp(12px,1.6vw,22px); grid-template-columns:1fr}
+    @media (min-width:980px){ .board{grid-template-columns:1.25fr .85fr} }
+
+    .panel{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:clamp(12px,1.6vw,18px)
+    }
+
+    /* order: paleta gore na mobilnom */
+    .game-panel{order:2}
+    .palette-panel{order:1}
+    @media (min-width:980px){
+      .game-panel{order:1}
+      .palette-panel{order:2}
+    }
+
+    .header{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap}
+    .title{font-weight:900; letter-spacing:.2px; font-size:clamp(18px,2.2vw,26px)}
+    .sub{color:var(--muted); font-size:clamp(12px,1.2vw,14px)}
+
+    .hud{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    .chip{
+      border:1px solid var(--border);
+      padding:8px 12px;
+      border-radius:999px;
+      font-weight:800;
+      background:#f8fafc;
+      font-variant-numeric:tabular-nums
+    }
+    .chip.warn{background:#fff1f2; border-color:#fecdd3}
+    .chip.good{background:#ecfeff; border-color:#a5f3fc}
+
+    .btn{
+      appearance:none;
+      border:1px solid var(--border);
+      background:#f8fafc;
+      color:var(--text);
+      padding:10px 14px;
+      border-radius:14px;
+      font-weight:800;
+      cursor:pointer;
+      transition:transform .15s ease, box-shadow .15s ease, background .15s ease, filter .15s ease;
+      touch-action:manipulation; /* helps avoid iOS double-tap zoom */
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn.primary{
+      background:linear-gradient(135deg,var(--brand), var(--brand-3));
+      color:#fff; border-color:transparent;
+      box-shadow:0 8px 20px rgba(33,133,197,.25)
+    }
+    .btn.primary:hover{filter:brightness(1.04)}
+    .btn:disabled{opacity:.55; cursor:not-allowed}
+
+    .rows{display:grid; gap:12px}
+    .row{
+      display:flex; align-items:center; gap:16px; padding:12px;
+      border:1px dashed var(--border); border-radius:16px; background:#ffffff
+    }
+    .row.inactive{opacity:.6}
+
+    .slots{display:flex; gap:var(--gap); flex-wrap:nowrap}
+    .slot{
+      width:var(--slot); height:var(--slot);
+      border-radius:16px; border:1px solid var(--border);
+      background:#f8fafc; position:relative; overflow:hidden; display:grid; place-items:center;
+      touch-action:manipulation; /* prevent double-tap zoom on iOS for this element */
+    }
+    .slot.filled::after{
+      content:""; position:absolute; inset:0; background-size:cover; background-position:center;
+      /* remove hover zoom to keep colors crisp and avoid scale artifacts */
+      transform:none !important;
+    }
+    .slot-label{color:var(--muted); font-size:12px}
+
+    .pegs{display:grid; grid-template-columns:repeat(2,16px); gap:6px 10px; margin-left:auto}
+    .peg{width:16px; height:16px; border-radius:50%; border:1px solid rgba(15,23,42,.2); background:#fff}
+    .peg.black{background:var(--peg-black)}
+    .peg.white{background:var(--peg-white)}
+
+    .palette{display:grid; grid-template-columns:repeat(2,1fr); gap:12px}
+    @media (min-width:540px){ .palette{grid-template-columns:repeat(4,1fr)} }
+    .symbol-btn{
+      height:unset; aspect-ratio:7/5;
+      border-radius:16px; border:1px solid var(--border); background:#fff; position:relative;
+      overflow:hidden; cursor:pointer; transition:transform .1s ease, box-shadow .2s ease, border-color .15s ease;
+      touch-action:manipulation; /* prevents double-tap zoom on iOS */
+    }
+    .symbol-btn::after{content:""; position:absolute; inset:0; background-size:cover; background-position:center; opacity:1}
+    .symbol-btn .symbol-name{
+      position:absolute; left:8px; bottom:8px; background:rgba(255,255,255,.9);
+      padding:4px 8px; border-radius:10px; font-weight:800; font-size:12px; border:1px solid var(--border)
+    }
+    .symbol-btn:hover{transform:translateY(-1px); box-shadow:var(--shadow)}
+
+    .actions{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap}
+    .help{color:var(--muted); font-size:13px; margin-top:10px}
+
+    .modal{position:fixed; inset:0; display:none; place-items:center; background:rgba(15,23,42,.35); padding:20px}
+    .modal.open{display:grid}
+    .modal-card{
+      width:min(520px,96%);
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:20px;
+      padding:18px;
+      box-shadow:var(--shadow);
+      text-align:center
+    }
+    .code{display:flex; justify-content:center; gap:10px; margin:12px 0 2px}
+    .restart{margin-top:10px}
+
+    .win{position:fixed; inset:0; display:none; place-items:center; background:#000; z-index:50}
+    .win.open{display:grid; animation:fade .35s ease}
+    .win-img{position:absolute; inset:0; background-size:cover; background-position:center; filter:saturate(1.05)}
+    .win .overlay{position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.25),rgba(0,0,0,.5))}
+    .win .text{position:relative; z-index:1; color:#fff; text-align:center; padding:16px}
+    .win .text h1{font-size:clamp(28px,6vw,64px); margin:0 0 6px 0; font-weight:900; letter-spacing:.3px}
+    .win .text p{margin:0; opacity:.9}
+    .win .text .btn{margin-top:14px; background:#fff}
+    @keyframes fade{from{opacity:0} to{opacity:1}}
+
+    /* “Nevidljivi” taster – klik zona 48x48 u donjem desnom uglu */
+    .cheat{
+      position:fixed; bottom:14px; right:14px; width:48px; height:48px; border-radius:12px;
+      opacity:0; background:#000; border:none; cursor:pointer; z-index:60;
+      touch-action:manipulation;
+    }
+
+    /* Images – zameni putanje po želji */
+    .symbol-btn[data-symbol="bebiii"]::after  { background-image:url("images/bebiii.png"); }
+    .symbol-btn[data-symbol="ljubav"]::after  { background-image:url("images/ljubav.png"); }
+    .symbol-btn[data-symbol="sreca"]::after   { background-image:url("images/sreca.png"); }
+    .symbol-btn[data-symbol="lepota"]::after  { background-image:url("images/lepota.png"); }
+
+    .slot.filled[data-symbol="bebiii"]::after { background-image:url("images/bebiii.png"); }
+    .slot.filled[data-symbol="ljubav"]::after { background-image:url("images/ljubav.png"); }
+    .slot.filled[data-symbol="sreca"]::after  { background-image:url("images/sreca.png"); }
+    .slot.filled[data-symbol="lepota"]::after { background-image:url("images/lepota.png"); }
+
+    @media (max-width:560px){
+      :root{--slot:54px}
+      .row{padding:8px}
+      .chip{padding:8px 10px}
+      .title{font-size:20px}
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      *{animation:none !important; transition:none !important}
+    }
+
+    /* High-contrast focus */
+    :is(button, .slot, .symbol-btn):focus-visible{
+      outline:2px solid var(--brand-3);
+      outline-offset:2px;
+      box-shadow:0 0 0 4px rgba(33,133,197,.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="board">
+      <!-- PALETA (gore na mobilnom) -->
+      <aside class="panel palette-panel">
+        <div class="title" style="margin-bottom:8px">Paleta Marine</div>
+        <div class="palette" id="palette">
+          <button class="symbol-btn" data-symbol="bebiii"  aria-label="bebiii"  data-testid="symbol-bebiii"><span class="symbol-name">bebiii</span></button>
+          <button class="symbol-btn" data-symbol="ljubav"  aria-label="ljubav"  data-testid="symbol-ljubav"><span class="symbol-name">ljubav</span></button>
+          <button class="symbol-btn" data-symbol="sreca"   aria-label="sreća"   data-testid="symbol-sreca"><span class="symbol-name">sreća</span></button>
+          <button class="symbol-btn" data-symbol="lepota"  aria-label="lepota"  data-testid="symbol-lepota"><span class="symbol-name">lepota</span></button>
+        </div>
+        <div class="actions">
+          <button id="btn-undo" class="btn" data-testid="undo">Obriši</button>
+          <button id="btn-submit" class="btn primary" data-testid="submit" disabled>Potvrdi</button>
+        </div>
+        <p class="help">Crni = simbol i mesto tačni. Beli = simbol tačan, mesto pogrešno.</p>
+      </aside>
+
+      <!-- IGRA -->
+      <section class="panel game-panel">
+        <div class="header">
+          <div>
+            <div class="title">Marina – simboli</div>
+            <div class="sub">Pogodi kombinaciju u 6 pokušaja • Simboli: bebiii, ljubav, sreća, lepota</div>
+          </div>
+          <div class="hud">
+            <div id="chip-timer" class="chip" aria-live="polite">⏱️ 03:00</div>
+            <div id="chip-score" class="chip good" aria-live="polite">⭐ Score: 1000</div>
+            <button class="btn" id="btn-new" data-testid="new-game">Nova</button>
+          </div>
+        </div>
+        <div class="rows" id="rows"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Lose modal -->
+  <div class="modal" id="modal">
+    <div class="modal-card">
+      <h2 id="end-title">Gotovo</h2>
+      <p id="end-sub" class="sub"></p>
+      <div class="code" id="secret-visual"></div>
+      <div id="final-score" class="chip good" style="display:inline-block; margin-top:10px">⭐ Score: 0</div>
+      <div style="margin-top:10px"><button id="btn-restart" class="btn primary restart" data-testid="restart">Igraj ponovo</button></div>
+    </div>
+  </div>
+
+  <!-- WIN fullscreen -->
+  <div class="win" id="win">
+    <div class="win-img" id="win-img" role="img" aria-label="Pobeda"></div>
+    <div class="overlay"></div>
+    <div class="text">
+      <h1>Bravo! 🎉</h1>
+      <p id="win-sub" class="sub" style="color:#e5e7eb"></p>
+      <button class="btn" id="btn-win-restart">Igraj ponovo</button>
+    </div>
+  </div>
+
+  <!-- “Nevidljivi” reveal taster -->
+  <button class="cheat" id="btn-cheat" aria-label="skriveno dugme"></button>
+
+  <script>
+    // ---- Config ----
+    const SYMBOLS = ["bebiii","ljubav","sreca","lepota"];
+    const CODE_LENGTH = 4, MAX_TURNS = 6, ALLOW_DUPLICATES = true;
+    const TOTAL_TIME = 180, BASE_SCORE = 1000, ATTEMPT_PENALTY = 100;
+    const WIN_IMAGE_MODE = "first-symbol"; // or "custom"
+    const WIN_IMAGE_URL  = "images/najlepsa.jpg";
+
+    // ---- DOM ----
+    const rowsEl = document.getElementById('rows');
+    const btnNew = document.getElementById('btn-new');
+    const btnUndo = document.getElementById('btn-undo');
+    const btnSubmit = document.getElementById('btn-submit');
+    const paletteEl = document.getElementById('palette');
+
+    const modal = document.getElementById('modal');
+    const endTitle = document.getElementById('end-title');
+    const endSub = document.getElementById('end-sub');
+    const secretVisual = document.getElementById('secret-visual');
+    const btnRestart = document.getElementById('btn-restart');
+    const finalScoreEl = document.getElementById('final-score');
+
+    const chipTimer = document.getElementById('chip-timer');
+    const chipScore = document.getElementById('chip-score');
+
+    const win = document.getElementById('win');
+       const winImg = document.getElementById('win-img');
+    const btnWinRestart = document.getElementById('btn-win-restart');
+    const winSub = document.getElementById('win-sub');
+
+    const btnCheat = document.getElementById('btn-cheat');
+
+    // ---- State ----
+    let secret = [];
+    let currentRow = 0;
+    let grid = [];
+    let remainingSeconds = TOTAL_TIME;
+    let timerId = null;
+    let gameOver = false;
+
+    // ---- Utils ----
+    const rand = n => Math.floor(Math.random()*n);
+    const clamp0 = n => Math.max(0,n);
+    const fmtTime = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+
+    function generateSecret(){
+      const code = [];
+      for(let i=0;i<CODE_LENGTH;i++){
+        if(ALLOW_DUPLICATES) code.push(SYMBOLS[rand(SYMBOLS.length)]);
+        else {
+          const avail=SYMBOLS.filter(x=>!code.includes(x));
+          code.push(avail[rand(avail.length)])
+        }
+      }
+      return code;
+    }
+
+    function makeRow(index){
+      const row = document.createElement('div');
+      row.className = 'row' + (index===0?'':' inactive'); row.dataset.row=index;
+
+      const slots=document.createElement('div'); slots.className='slots';
+      for(let i=0;i<CODE_LENGTH;i++){
+        const slot=document.createElement('div'); slot.className='slot'; slot.dataset.col=i;
+        slot.innerHTML=`<span class="slot-label">${i+1}</span>`; slots.appendChild(slot);
+      }
+      const pegs=document.createElement('div'); pegs.className='pegs';
+      for(let i=0;i<CODE_LENGTH;i++){ const p=document.createElement('div'); p.className='peg'; pegs.appendChild(p); }
+
+      row.appendChild(slots); row.appendChild(pegs); rowsEl.appendChild(row);
+    }
+
+    function drawRows(){ rowsEl.innerHTML=''; for(let r=0;r<MAX_TURNS;r++) makeRow(r); }
+
+    function refreshActiveRowUI(){
+      [...rowsEl.querySelectorAll('.row')].forEach((r,i)=> r.classList.toggle('inactive', i!==currentRow));
+      const filled = grid[currentRow].filter(Boolean).length;
+      btnSubmit.disabled = gameOver || filled!==CODE_LENGTH;
+      btnUndo.disabled = gameOver || filled===0;
+    }
+
+    function setSlot(r,c,sym){
+      grid[r][c]=sym;
+      const slot=rowsEl.querySelector(`.row[data-row="${r}"] .slot[data-col="${c}"]`);
+      if(sym){
+        slot.classList.add('filled'); slot.dataset.symbol=sym; slot.innerHTML='';
+      }else{
+        slot.classList.remove('filled'); delete slot.dataset.symbol;
+        slot.innerHTML=`<span class="slot-label">${c+1}</span>`;
+      }
+    }
+
+    function pushSymbol(sym){
+      if(gameOver) return;
+      const row=grid[currentRow]; const col=row.findIndex(v=>!v);
+      if(col===-1) return;
+      setSlot(currentRow,col,sym); refreshActiveRowUI();
+    }
+
+    function undo(){
+      if(gameOver) return;
+      const row=grid[currentRow]; let col=row.length-1; while(col>=0 && !row[col]) col--;
+      if(col>=0){ setSlot(currentRow,col,null); refreshActiveRowUI(); }
+    }
+
+    function scoreGuess(guess, secret){
+      let black=0, white=0; const sCount=Object.create(null), gCount=Object.create(null);
+      for(let i=0;i<CODE_LENGTH;i++){
+        if(guess[i]===secret[i]) black++;
+        else { sCount[secret[i]]=(sCount[secret[i]]||0)+1; gCount[guess[i]]=(gCount[guess[i]]||0)+1; }
+      }
+      for(const k of Object.keys(gCount)){ if(sCount[k]) white += Math.min(gCount[k], sCount[k]); }
+      return {black, white};
+    }
+
+    function paintPegs(rowIndex, {black,white}){
+      const pegs=[...rowsEl.querySelectorAll(`.row[data-row="${rowIndex}"] .peg`)];
+      let i=0; for(let b=0;b<black;b++,i++) pegs[i].classList.add('black');
+      for(let w=0;w<white;w++,i++) pegs[i].classList.add('white');
+    }
+
+    function liveScore(offset=0){
+      const attemptsUsed = currentRow + offset;
+      const timeSpent = TOTAL_TIME - remainingSeconds;
+      return clamp0(BASE_SCORE - ATTEMPT_PENALTY*attemptsUsed - timeSpent);
+    }
+
+    function showLose(){
+      gameOver=true; stopTimer();
+      endSub.textContent = remainingSeconds<=0 ? 'Vreme je isteklo. Tačna kombinacija je:' : 'Nisi pogodio/la. Tačna kombinacija je:';
+      secretVisual.innerHTML='';
+      for(const sym of secret){
+        const s=document.createElement('div');
+        s.className='slot filled'; s.style.width='52px'; s.style.height='52px'; s.dataset.symbol=sym;
+        secretVisual.appendChild(s);
+      }
+      finalScoreEl.textContent = `⭐ Score: ${liveScore()}`;
+      modal.classList.add('open');
+    }
+
+    function showWin(){
+      gameOver=true; stopTimer();
+      let imgUrl = WIN_IMAGE_URL;
+      if(WIN_IMAGE_MODE==="custom"){
+        const map={bebiii:'images/bebiii.png', ljubav:'images/ljubav.png', sreca:'images/sreca.png', lepota:'images/lepota.png'};
+        imgUrl = map[secret[0]] || WIN_IMAGE_URL;
+      }
+      winImg.style.backgroundImage = `url("${imgUrl}")`;
+      winSub.textContent = `Pogodio/la si u ${currentRow+1}. pokušaju — ⭐ ${liveScore(1)}`;
+      win.classList.add('open');
+    }
+
+    function submit(){
+      if(gameOver) return;
+      const guess=[...grid[currentRow]];
+      const res=scoreGuess(guess, secret);
+      paintPegs(currentRow,res);
+      // prikaži penal odmah
+      chipScore.textContent = `⭐ Score: ${liveScore(1)}`;
+      if(res.black===CODE_LENGTH){ showWin(); return; }
+      if(currentRow===MAX_TURNS-1){ showLose(); return; }
+      currentRow++; refreshActiveRowUI();
+    }
+
+    // Timer
+    function startTimer(){ stopTimer(); renderTimer();
+      timerId=setInterval(()=>{
+        remainingSeconds--; renderTimer();
+        chipScore.textContent=`⭐ Score: ${liveScore()}`;
+        if(remainingSeconds<=0){ remainingSeconds=0; stopTimer(); showLose(); }
+      },1000);
+    }
+    function stopTimer(){ if(timerId){ clearInterval(timerId); timerId=null; } }
+    function renderTimer(){
+      chipTimer.textContent = `⏱️ ${fmtTime(remainingSeconds)}`;
+      chipTimer.className = 'chip' + (remainingSeconds<=15 ? ' warn' : ' good');
+    }
+
+    // New game
+    function newGame(){
+      secret=generateSecret();
+      currentRow=0;
+      grid=Array.from({length:MAX_TURNS},()=>Array(CODE_LENGTH).fill(null));
+      drawRows();
+      remainingSeconds=TOTAL_TIME;
+      chipScore.textContent=`⭐ Score: ${BASE_SCORE}`;
+      chipScore.className='chip good';
+      modal.classList.remove('open'); win.classList.remove('open');
+      gameOver=false; btnSubmit.disabled=true; btnUndo.disabled=true;
+      startTimer(); refreshActiveRowUI();
+      // console.log('SECRET', secret.join(' '));
+    }
+
+    // Cheat reveal
+    function revealSecretToast(){
+      if(!secret.length) return;
+      // mali “toast” prikaz preko donje ivice
+      const toast=document.createElement('div');
+      toast.style.position='fixed'; toast.style.left='50%'; toast.style.bottom='20px'; toast.style.transform='translateX(-50%)';
+      toast.style.background='#fff'; toast.style.border='1px solid #e5e7eb'; toast.style.borderRadius='14px';
+      toast.style.boxShadow='0 10px 30px rgba(0,0,0,.12)'; toast.style.padding='10px';
+      toast.style.zIndex='70'; toast.style.display='flex'; toast.style.gap='10px';
+      secret.forEach(sym=>{
+        const s=document.createElement('div'); s.className='slot filled'; s.style.width='42px'; s.style.height='42px'; s.dataset.symbol=sym;
+        toast.appendChild(s);
+      });
+      document.body.appendChild(toast);
+      setTimeout(()=> toast.remove(), 2500);
+    }
+
+    // Events
+    paletteEl.addEventListener('click', e=>{ const b=e.target.closest('.symbol-btn'); if(!b) return; pushSymbol(b.dataset.symbol); });
+    btnUndo.addEventListener('click', undo);
+    btnSubmit.addEventListener('click', submit);
+    btnNew.addEventListener('click', newGame);
+    btnRestart.addEventListener('click', newGame);
+    btnWinRestart.addEventListener('click', newGame);
+    modal.addEventListener('click', e=>{ if(e.target===modal) modal.classList.remove('open') });
+    btnCheat.addEventListener('click', revealSecretToast);
+
+    window.addEventListener('keydown', e=>{
+      if(gameOver) return;
+      if(e.key==='Backspace'){ e.preventDefault(); undo(); }
+      if(e.key==='Enter'){ if(!btnSubmit.disabled) submit(); }
+      const map={b:'bebiii', l:'ljubav', s:'sreca', p:'lepota'}; const k=e.key?.toLowerCase?.(); if(map[k]) pushSymbol(map[k]);
+    });
+
+    // --- Prevent double-tap / double-click zoom on interactive image areas only ---
+    // Keeps pinch-zoom everywhere else (accessibility-friendly).
+    const NO_ZOOM_SELECTOR = '.symbol-btn, .slot, .win, .modal, .btn';
+    let __lastTouchEnd = 0;
+
+    document.addEventListener('touchend', (e)=>{
+      if(!e.target.closest(NO_ZOOM_SELECTOR)) return;
+      const now = Date.now();
+      if(now - __lastTouchEnd <= 350){
+        e.preventDefault(); // block iOS double-tap zoom
+      }
+      __lastTouchEnd = now;
+    }, {passive:false});
+
+    document.addEventListener('dblclick', (e)=>{
+      if(e.target.closest(NO_ZOOM_SELECTOR)){
+        e.preventDefault(); // block desktop/mobile dblclick zoom on those elements
+      }
+    }, {passive:false});
+
+    // Ensure interactive elements hint no-zoom to the browser
+    function setTouchAction(){
+      document.querySelectorAll(NO_ZOOM_SELECTOR).forEach(el=>{
+        el.style.touchAction = 'manipulation';
+      });
+    }
+
+    // Init
+    newGame();
+    setTouchAction();
+  </script>
+</body>
+</html>
